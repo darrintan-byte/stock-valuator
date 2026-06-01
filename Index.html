@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Intrinsic Valuator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:#020817;color:#e2e8f0;font-family:'DM Sans',sans-serif;min-height:100vh;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:#0f172a;}::-webkit-scrollbar-thumb{background:#1e293b;border-radius:2px;}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+
+.header{background:linear-gradient(180deg,#0a1628 0%,#020817 100%);border-bottom:1px solid #0f2240;padding:22px 0 0;}
+.header-inner{max-width:700px;margin:0 auto;padding:0 16px;}
+.logo-row{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;}
+.logo-word{font-family:'Playfair Display',serif;font-weight:900;font-size:24px;color:#f1f5f9;letter-spacing:-0.02em;}
+.logo-badge{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px;color:#3b82f6;letter-spacing:.15em;background:#1e3a5f;padding:2px 8px;border-radius:4px;}
+.subtitle{color:#475569;font-size:12px;margin-bottom:16px;}
+.tabs{display:flex;gap:2px;}
+.tab{background:transparent;border:none;border-top:2px solid transparent;color:#64748b;padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;border-radius:4px 4px 0 0;transition:all .15s;}
+.tab.active{background:#0f172a;border-top-color:#3b82f6;color:#e2e8f0;}
+
+.main{max-width:700px;margin:0 auto;padding:20px 16px 60px;}
+
+/* SEARCH BAR */
+.search-section{margin-bottom:20px;}
+.search-wrap{display:flex;gap:10px;align-items:stretch;}
+.search-input-wrap{flex:1;position:relative;}
+.search-input{width:100%;background:#0a1020;border:2px solid #1e3a5f;border-radius:10px;padding:14px 16px;color:#f1f5f9;font-size:16px;font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:.08em;outline:none;transition:border-color .2s;text-transform:uppercase;}
+.search-input::placeholder{text-transform:none;font-weight:400;letter-spacing:0;color:#334155;}
+.search-input:focus{border-color:#3b82f6;}
+.fetch-btn{background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:10px;padding:0 20px;color:white;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:opacity .15s;min-width:90px;}
+.fetch-btn:active{opacity:.8;}
+.fetch-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* STOCK HERO CARD */
+.stock-hero{background:linear-gradient(135deg,#0a1628 0%,#0f172a 100%);border:1px solid #1d4ed8;border-radius:14px;padding:18px;margin-bottom:20px;display:none;}
+.stock-hero.visible{display:block;}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+.hero-name{font-size:11px;color:#64748b;margin-bottom:2px;}
+.hero-company{font-weight:700;font-size:16px;color:#e2e8f0;}
+.hero-sector{font-size:11px;color:#475569;margin-top:2px;}
+.hero-price-wrap{text-align:right;}
+.hero-price{font-family:'IBM Plex Mono',monospace;font-weight:900;font-size:26px;color:#f1f5f9;}
+.hero-change{font-size:12px;font-weight:600;margin-top:2px;}
+.hero-change.up{color:#4ade80;}.hero-change.down{color:#f87171;}
+.fetched-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+@media(max-width:420px){.fetched-grid{grid-template-columns:repeat(2,1fr);}}
+.fetched-item{background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:8px 10px;}
+.fi-label{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.fi-val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:#93c5fd;}
+.fi-val.na{color:#334155;font-weight:400;}
+
+/* STATUS */
+.status{text-align:center;padding:14px;border-radius:10px;margin-bottom:16px;font-size:13px;font-weight:600;display:none;}
+.status.loading{display:block;background:#0a1628;border:1px solid #1d4ed8;color:#60a5fa;}
+.status.error{display:block;background:#1a0a0a;border:1px solid #450a0a;color:#f87171;}
+.status.success{display:block;background:#052e16;border:1px solid #166534;color:#4ade80;}
+
+/* INPUT GROUPS */
+.section-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;margin:20px 0 12px;display:flex;align-items:center;gap:8px;}
+.section-title::after{content:'';flex:1;height:1px;background:#1e293b;}
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:520px){.input-grid{grid-template-columns:1fr;}}
+.input-group{background:#0a1020;border:1px solid #1e293b;border-radius:12px;padding:14px;}
+.group-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#3b82f6;margin-bottom:12px;}
+.field{margin-bottom:10px;}.field:last-child{margin-bottom:0;}
+.field label{display:block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#94a3b8;margin-bottom:3px;}
+.field-wrap{position:relative;}
+.field input{width:100%;background:#0f172a;border:1px solid #1e293b;border-radius:7px;padding:9px 12px;color:#f1f5f9;font-size:14px;font-family:'IBM Plex Mono',monospace;outline:none;transition:border-color .15s;}
+.field input.has-suffix{padding-right:36px;}
+.field input:focus{border-color:#3b82f6;}
+.field input.prefilled{border-color:#1d4ed855;background:#0a1628;}
+.suffix{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#64748b;font-size:12px;pointer-events:none;}
+.hint{margin-top:3px;font-size:10px;color:#475569;}
+.calc-btn{display:block;width:100%;margin-top:18px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:10px;padding:14px;color:white;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;letter-spacing:.03em;box-shadow:0 4px 24px #1d4ed840;transition:opacity .15s;}
+.calc-btn:active{opacity:.8;}
+
+/* RESULTS */
+.summary{background:linear-gradient(135deg,#1e3a5f,#0f172a);border:1px solid #1d4ed8;border-radius:12px;padding:18px;margin-bottom:20px;}
+.summary-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#60a5fa;margin-bottom:12px;}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.summary-item .s-label{font-size:10px;color:#64748b;margin-bottom:3px;}
+.summary-item .s-val{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:17px;}
+.price-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 14px;background:#0f172a;border:1px solid #1e293b;border-radius:10px;flex-wrap:wrap;}
+.price-bar .label{font-size:11px;color:#64748b;}
+.price-bar .price{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:20px;color:#e2e8f0;}
+.price-bar .ticker-badge{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;color:#3b82f6;background:#1e3a5f;padding:3px 9px;border-radius:6px;}
+.result-card{border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .2s;}
+.result-card.neutral{background:#0f172a;border:1px solid #1e293b;}
+.result-card.green{background:linear-gradient(135deg,#052e16,#0f172a);border:1px solid #166534;}
+.result-card.amber{background:linear-gradient(135deg,#1c1917,#0f172a);border:1px solid #292524;}
+.result-card.red{background:linear-gradient(135deg,#1a0a0a,#0f172a);border:1px solid #450a0a;}
+.card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+.card-left{display:flex;align-items:center;gap:8px;}
+.card-icon{font-size:16px;}.card-name{font-weight:700;color:#e2e8f0;font-size:13px;}
+.card-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.card-value{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:17px;}
+.card-value.green{color:#4ade80;}.card-value.amber{color:#fbbf24;}.card-value.red{color:#f87171;}.card-value.neutral{color:#94a3b8;}
+.card-empty{font-size:11px;color:#475569;font-style:italic;}
+.card-toggle{color:#475569;font-size:11px;}
+.badge{border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700;}
+.badge.green{background:#22c55e22;color:#16a34a;border:1px solid #22c55e55;}
+.badge.amber{background:#eab30822;color:#b45309;border:1px solid #eab30855;}
+.badge.red{background:#ef444422;color:#dc2626;border:1px solid #ef444455;}
+.card-detail{margin-top:12px;padding-top:12px;border-top:1px solid #1e293b;}
+.detail-formula{font-size:11px;color:#94a3b8;font-family:'IBM Plex Mono',monospace;margin-bottom:8px;word-break:break-word;}
+.detail-table{width:100%;border-collapse:collapse;font-size:11px;color:#94a3b8;font-family:'IBM Plex Mono',monospace;}
+.detail-table th{text-align:left;padding-bottom:4px;color:#64748b;font-weight:600;}
+.detail-table td{padding:2px 0;}.detail-table td:not(:first-child){text-align:right;}
+.detail-table .total-row td{border-top:1px solid #1e293b;padding-top:4px;color:#e2e8f0;}
+.detail-line{font-size:11px;color:#94a3b8;margin-top:4px;}.detail-line span{color:#e2e8f0;}
+.disclaimer{margin-top:20px;padding:12px 14px;background:#0a1020;border:1px solid #1e293b;border-radius:10px;font-size:11px;color:#475569;line-height:1.6;}
+.disclaimer strong{color:#64748b;}
+.hidden{display:none!important;}
+
+/* SPINNER */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #1e3a5f;border-top-color:#3b82f6;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo-row">
+      <span class="logo-word">Intrinsic</span>
+      <span class="logo-badge">VALUATOR</span>
+    </div>
+    <p class="subtitle">Enter a ticker to auto-fetch live data, then calculate intrinsic value</p>
+    <div class="tabs">
+      <button class="tab active" id="tab-inputs" onclick="switchTab('inputs')">📝 Inputs</button>
+      <button class="tab" id="tab-results" onclick="switchTab('results')">📊 Results</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ── INPUTS PANEL ── -->
+  <div id="panel-inputs">
+
+    <!-- Search -->
+    <div class="search-section">
+      <div class="search-wrap">
+        <div class="search-input-wrap">
+          <input class="search-input" id="tickerInput" type="text" placeholder="Enter ticker e.g. AAPL, MSFT, WMT" autocomplete="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')fetchStock()"/>
+        </div>
+        <button class="fetch-btn" id="fetchBtn" onclick="fetchStock()">🔍 Fetch</button>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="status" id="statusBox"></div>
+
+    <!-- Stock Hero -->
+    <div class="stock-hero" id="stockHero">
+      <div class="hero-top">
+        <div>
+          <div class="hero-name" id="heroTicker"></div>
+          <div class="hero-company" id="heroName"></div>
+          <div class="hero-sector" id="heroSector"></div>
+        </div>
+        <div class="hero-price-wrap">
+          <div class="hero-price" id="heroPrice"></div>
+          <div class="hero-change" id="heroChange"></div>
+        </div>
+      </div>
+      <div class="fetched-grid" id="fetchedGrid"></div>
+    </div>
+
+    <!-- Assumption Inputs -->
+    <div class="section-title">Adjust Assumptions</div>
+    <div class="input-grid">
+
+      <div class="input-group">
+        <div class="group-title">Valuation Inputs</div>
+        <div class="field"><label>EPS TTM</label><div class="field-wrap"><input type="number" id="eps" class="has-suffix" placeholder="auto"/><span class="suffix">$</span></div></div>
+        <div class="field"><label>Forward EPS</label><div class="field-wrap"><input type="number" id="forwardEps" class="has-suffix" placeholder="auto"/><span class="suffix">$</span></div></div>
+        <div class="field"><label>Book Value / Share</label><div class="field-wrap"><input type="number" id="bookValue" class="has-suffix" placeholder="auto"/><span class="suffix">$</span></div></div>
+        <div class="field"><label>Current Price</label><div class="field-wrap"><input type="number" id="currentPrice" class="has-suffix" placeholder="auto"/><span class="suffix">$</span></div></div>
+      </div>
+
+      <div class="input-group">
+        <div class="group-title">Growth & Rates</div>
+        <div class="field"><label>5-Yr Growth Rate</label><div class="field-wrap"><input type="number" id="growthRate5y" class="has-suffix" placeholder="15" value="15"/><span class="suffix">%</span></div><div class="hint">DCF & Graham Revised</div></div>
+        <div class="field"><label>EPS Growth Rate</label><div class="field-wrap"><input type="number" id="epsGrowthRate" class="has-suffix" placeholder="auto"/><span class="suffix">%</span></div><div class="hint">Lynch PEG</div></div>
+        <div class="field"><label>Terminal Growth</label><div class="field-wrap"><input type="number" id="terminalGrowthRate" class="has-suffix" placeholder="3" value="3"/><span class="suffix">%</span></div></div>
+        <div class="field"><label>Discount Rate (WACC)</label><div class="field-wrap"><input type="number" id="discountRate" class="has-suffix" placeholder="10" value="10"/><span class="suffix">%</span></div></div>
+      </div>
+
+      <div class="input-group">
+        <div class="group-title">DCF Inputs</div>
+        <div class="field"><label>Free Cash Flow (M)</label><div class="field-wrap"><input type="number" id="fcf" class="has-suffix" placeholder="auto"/><span class="suffix">M</span></div></div>
+        <div class="field"><label>Shares Outstanding (M)</label><div class="field-wrap"><input type="number" id="sharesOutstanding" class="has-suffix" placeholder="auto"/><span class="suffix">M</span></div></div>
+        <div class="field"><label>Net Debt (M)</label><div class="field-wrap"><input type="number" id="netDebt" class="has-suffix" placeholder="0" value="0"/><span class="suffix">M</span></div></div>
+      </div>
+
+      <div class="input-group">
+        <div class="group-title">DDM & Other</div>
+        <div class="field"><label>Annual Dividend</label><div class="field-wrap"><input type="number" id="annualDividend" class="has-suffix" placeholder="auto"/><span class="suffix">$</span></div></div>
+        <div class="field"><label>Dividend Growth</label><div class="field-wrap"><input type="number" id="dividendGrowthRate" class="has-suffix" placeholder="5" value="5"/><span class="suffix">%</span></div></div>
+        <div class="field"><label>Required Return</label><div class="field-wrap"><input type="number" id="requiredReturn" class="has-suffix" placeholder="10" value="10"/><span class="suffix">%</span></div></div>
+        <div class="field"><label>Target P/E</label><div class="field-wrap"><input type="number" id="peMultiple" class="has-suffix" placeholder="auto"/><span class="suffix">×</span></div></div>
+        <div class="field"><label>Years Forward</label><div class="field-wrap"><input type="number" id="yearsForward" class="has-suffix" placeholder="5" value="5"/><span class="suffix">yrs</span></div></div>
+        <div class="field"><label>PEG Ratio</label><div class="field-wrap"><input type="number" id="pegRatio" class="has-suffix" placeholder="1" value="1"/><span class="suffix">×</span></div></div>
+        <div class="field"><label>AAA Bond Yield</label><div class="field-wrap"><input type="number" id="currentYield" class="has-suffix" placeholder="4.4" value="4.4"/><span class="suffix">%</span></div></div>
+      </div>
+
+    </div>
+    <button class="calc-btn" onclick="calculate()">Calculate Intrinsic Values →</button>
+  </div>
+
+  <!-- ── RESULTS PANEL ── -->
+  <div id="panel-results" class="hidden">
+    <div id="summary-bar"></div>
+    <div id="price-bar-wrap"></div>
+    <div id="results-list"></div>
+    <div class="disclaimer"><strong>Disclaimer:</strong> Estimates are based on user-provided or fetched inputs and simplified models. For educational purposes only — not financial advice. Always do your own due diligence.</div>
+  </div>
+
+</div>
+
+<script>
+// ─── Helpers ───────────────────────────────────────────
+function g(id){return document.getElementById(id);}
+function val(id){return parseFloat(g(id).value)||0;}
+function str(id){return g(id).value.trim();}
+function setField(id,v,prefill=true){
+  if(v===null||v===undefined||isNaN(v))return;
+  g(id).value=parseFloat(v.toFixed(4));
+  if(prefill)g(id).classList.add('prefilled');
+}
+function fmt(n){return parseFloat(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtM(n){return parseFloat(n).toLocaleString('en-US',{maximumFractionDigits:0});}
+function fmtB(n){
+  n=parseFloat(n);
+  if(n>=1e12)return(n/1e12).toFixed(2)+'T';
+  if(n>=1e9)return(n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return(n/1e6).toFixed(2)+'M';
+  return n.toFixed(2);
+}
+
+// ─── Tab switching ──────────────────────────────────────
+function switchTab(tab){
+  g('panel-inputs').classList.toggle('hidden',tab!=='inputs');
+  g('panel-results').classList.toggle('hidden',tab!=='results');
+  g('tab-inputs').classList.toggle('active',tab==='inputs');
+  g('tab-results').classList.toggle('active',tab==='results');
+}
+
+// ─── Status helper ──────────────────────────────────────
+function setStatus(type,msg){
+  const el=g('statusBox');
+  el.className='status '+type;
+  el.innerHTML=type==='loading'?`<span class="spinner"></span>${msg}`:msg;
+}
+function clearStatus(){g('statusBox').className='status';}
+
+// ─── Fetch live data ────────────────────────────────────
+async function fetchStock(){
+  const ticker=g('tickerInput').value.trim().toUpperCase();
+  if(!ticker){setStatus('error','Please enter a ticker symbol.');return;}
+
+  setStatus('loading',`Fetching data for ${ticker}…`);
+  g('fetchBtn').disabled=true;
+  g('stockHero').classList.remove('visible');
+
+  // We use Yahoo Finance v8 quote endpoint (CORS-friendly from browsers)
+  const url=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
+  const url2=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=defaultKeyStatistics%2CfinancialData%2CsummaryDetail%2CassetProfile%2Cprice`;
+
+  try{
+    // Fetch both endpoints in parallel
+    const [r1,r2]=await Promise.all([
+      fetch(url,{headers:{'Accept':'application/json'}}),
+      fetch(url2,{headers:{'Accept':'application/json'}})
+    ]);
+
+    if(!r1.ok&&!r2.ok)throw new Error(`Ticker "${ticker}" not found. Check the symbol and try again.`);
+
+    const [d1,d2]=await Promise.all([r1.json(),r2.json()]);
+
+    // ── Parse price from chart endpoint ──
+    let price=null,change=null,changePct=null,companyName=ticker;
+    try{
+      const meta=d1.chart.result[0].meta;
+      price=meta.regularMarketPrice;
+      const prev=meta.chartPreviousClose||meta.previousClose;
+      change=price-prev; changePct=(change/prev)*100;
+      companyName=meta.shortName||meta.longName||ticker;
+    }catch(e){}
+
+    // ── Parse fundamentals from quoteSummary ──
+    let eps=null,fwdEps=null,bv=null,fcf=null,shares=null,div=null;
+    let sector=null,industry=null,pe=null,epsGrowth=null,totalDebt=null,totalCash=null;
+    try{
+      const res=d2.quoteSummary.result[0];
+      const fd=res.financialData||{};
+      const ks=res.defaultKeyStatistics||{};
+      const sd=res.summaryDetail||{};
+      const ap=res.assetProfile||{};
+      const pr=res.price||{};
+
+      companyName=pr.longName||pr.shortName||companyName;
+      eps=ks.trailingEps?.raw??null;
+      fwdEps=ks.forwardEps?.raw??null;
+      bv=ks.bookValue?.raw??null;
+      fcf=fd.freeCashflow?.raw??null; if(fcf)fcf=fcf/1e6; // to millions
+      shares=ks.sharesOutstanding?.raw??null; if(shares)shares=shares/1e6;
+      div=sd.dividendRate?.raw??null;
+      sector=ap.sector||null;
+      industry=ap.industry||null;
+      pe=sd.trailingPE?.raw??sd.forwardPE?.raw??null;
+      epsGrowth=fd.earningsGrowth?.raw??null; if(epsGrowth)epsGrowth=epsGrowth*100;
+      totalDebt=fd.totalDebt?.raw??null; if(totalDebt)totalDebt=totalDebt/1e6;
+      totalCash=fd.totalCashPerShare?.raw??null;
+      // net debt = totalDebt - cash (approximate)
+      const cashTotal=fd.totalCash?.raw??null;
+      let netDebt=null;
+      if(totalDebt!==null&&cashTotal!==null)netDebt=(totalDebt*1e6-cashTotal)/1e6;
+
+      // Pre-fill inputs
+      setField('eps',eps);
+      setField('forwardEps',fwdEps);
+      setField('bookValue',bv);
+      setField('currentPrice',price);
+      if(fcf)setField('fcf',fcf);
+      if(shares)setField('sharesOutstanding',shares);
+      if(div)setField('annualDividend',div);
+      if(epsGrowth&&epsGrowth>0)setField('epsGrowthRate',epsGrowth);
+      if(pe&&pe>0&&pe<100)setField('peMultiple',pe);
+      if(netDebt!==null)setField('netDebt',netDebt);
+
+    }catch(e){console.warn('quoteSummary parse error',e);}
+
+    // ── Render hero card ──
+    g('heroTicker').textContent=ticker;
+    g('heroName').textContent=companyName;
+    g('heroSector').textContent=[sector,industry].filter(Boolean).join(' · ')||'';
+    g('heroPrice').textContent=price?`$${fmt(price)}`:'N/A';
+    if(change!==null){
+      const el=g('heroChange');
+      el.textContent=`${change>=0?'+':''}${fmt(change)} (${changePct>=0?'+':''}${changePct.toFixed(2)}%)`;
+      el.className='hero-change '+(change>=0?'up':'down');
+    }
+
+    // Fetched data grid
+    const items=[
+      {label:'EPS (TTM)',val:eps!=null?`$${fmt(eps)}`:null},
+      {label:'Forward EPS',val:fwdEps!=null?`$${fmt(fwdEps)}`:null},
+      {label:'Book Value',val:bv!=null?`$${fmt(bv)}`:null},
+      {label:'Free Cash Flow',val:fcf!=null?`$${fmtB(fcf*1e6)}`:null},
+      {label:'Shares Out',val:shares!=null?`${fmtB(shares*1e6)}`:null},
+      {label:'Dividend',val:div!=null?`$${fmt(div)}/yr`:null},
+      {label:'Trailing P/E',val:pe!=null?`${fmt(pe)}×`:null},
+      {label:'EPS Growth',val:epsGrowth!=null?`${epsGrowth.toFixed(1)}%`:null},
+      {label:'Sector',val:sector||null},
+    ];
+    g('fetchedGrid').innerHTML=items.map(i=>`
+      <div class="fetched-item">
+        <div class="fi-label">${i.label}</div>
+        <div class="fi-val${i.val?'':' na'}">${i.val||'N/A'}</div>
+      </div>`).join('');
+
+    g('stockHero').classList.add('visible');
+    setStatus('success',`✓ Data loaded for ${ticker}. Review auto-filled fields below, then calculate.`);
+    setTimeout(clearStatus,4000);
+
+  }catch(err){
+    setStatus('error',`⚠ ${err.message||'Failed to fetch data. Check your connection and ticker symbol.'}`);
+  }finally{
+    g('fetchBtn').disabled=false;
+  }
+}
+
+// ─── Valuation Models ───────────────────────────────────
+function calcDCF(){
+  const fcf=val('fcf'),g5=val('growthRate5y')/100,tg=val('terminalGrowthRate')/100;
+  const dr=val('discountRate')/100,shares=val('sharesOutstanding'),debt=val('netDebt');
+  if(!fcf||!shares||dr<=tg)return null;
+  let pv=0,cf=fcf;const steps=[];
+  for(let yr=1;yr<=5;yr++){cf*=(1+g5);const p=cf/Math.pow(1+dr,yr);pv+=p;steps.push({yr,cf:cf.toFixed(2),pv:p.toFixed(2)});}
+  const tv=(cf*(1+tg))/(dr-tg),pvT=tv/Math.pow(1+dr,5);
+  const ev=pv+pvT,eq=ev-debt,iv=eq/shares;
+  return{intrinsic:iv.toFixed(2),steps,pvT:pvT.toFixed(2),pv:pv.toFixed(2),
+    detail(){
+      let rows=steps.map(s=>`<tr><td>${s.yr}</td><td>$${fmtM(s.cf)}M</td><td>$${fmtM(s.pv)}M</td></tr>`).join('');
+      rows+=`<tr class="total-row"><td>Terminal PV</td><td></td><td>$${fmtM(pvT)}M</td></tr>`;
+      return`<table class="detail-table"><thead><tr><th>Year</th><th>FCF</th><th>PV</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+  };
+}
+function calcGrahamOrig(){
+  const e=val('eps'),bv=val('bookValue');
+  if(!e||!bv||e<=0||bv<=0)return null;
+  const iv=Math.sqrt(22.5*e*bv);
+  return{intrinsic:iv.toFixed(2),formula:`√(22.5 × $${e} × $${bv})`};
+}
+function calcGrahamRev(){
+  const e=val('eps'),g=val('growthRate5y')||5,y=val('currentYield');
+  if(!e||!y)return null;
+  const iv=(e*(8.5+2*g)*4.4)/y;
+  return{intrinsic:iv.toFixed(2),formula:`(${e} × (8.5 + 2×${g}%) × 4.4) / ${y}%`};
+}
+function calcLynch(){
+  const e=val('eps'),g=val('epsGrowthRate'),peg=val('pegRatio');
+  if(!e||!g||!peg)return null;
+  const fairPE=g*peg,iv=e*fairPE;
+  return{intrinsic:iv.toFixed(2),formula:`EPS × (Growth × PEG) = $${e} × ${fairPE.toFixed(1)}`,fairPE:fairPE.toFixed(1)};
+}
+function calcDDM(){
+  const d=val('annualDividend'),gd=val('dividendGrowthRate')/100,r=val('requiredReturn')/100;
+  if(!d||r<=gd)return null;
+  const iv=(d*(1+gd))/(r-gd);
+  return{intrinsic:iv.toFixed(2),formula:`$${d}×${(1+gd).toFixed(2)} / (${(r*100).toFixed(0)}%−${(gd*100).toFixed(0)}%)`};
+}
+function calcEPSGrowth(){
+  const eps=val('forwardEps'),pe=val('peMultiple'),yrs=val('yearsForward'),dr=val('discountRate')/100;
+  if(!eps||!pe||!yrs)return null;
+  const fp=eps*pe,iv=fp/Math.pow(1+dr,yrs);
+  return{intrinsic:iv.toFixed(2),futurePrice:fp.toFixed(2),formula:`($${eps} × ${pe}×) / (1+${(dr*100).toFixed(0)}%)^${yrs}`};
+}
+
+// ─── MOS helpers ───────────────────────────────────────
+function getMOS(iv,cp){if(!iv||!cp)return null;return(((iv-cp)/iv)*100).toFixed(1);}
+function mosColor(mos){if(mos===null)return'neutral';const n=parseFloat(mos);return n>=20?'green':n>=0?'amber':'red';}
+function badge(mos){
+  if(mos===null)return'';
+  const n=parseFloat(mos),c=mosColor(mos);
+  const arrow=n>=20?'▲':n>=0?'≈':'▼';
+  const lbl=n>=0?`${mos}% undervalued`:`${Math.abs(mos)}% overvalued`;
+  return`<span class="badge ${c}">${arrow} ${lbl}</span>`;
+}
+
+const METHODS=[
+  {id:'dcf',label:'DCF Model',icon:'📈',fn:calcDCF},
+  {id:'graham',label:'Graham Original',icon:'📐',fn:calcGrahamOrig},
+  {id:'grahamRev',label:'Graham Revised',icon:'🔢',fn:calcGrahamRev},
+  {id:'lynch',label:'Peter Lynch (PEG)',icon:'🧮',fn:calcLynch},
+  {id:'ddm',label:'Dividend DDM',icon:'💰',fn:calcDDM},
+  {id:'epsgrowth',label:'EPS Growth',icon:'📊',fn:calcEPSGrowth},
+];
+const expanded={};
+
+function toggleDetail(id){expanded[id]=!expanded[id];renderResults();}
+
+function calculate(preserveTab){
+  renderResults();
+  if(!preserveTab)switchTab('results');
+}
+
+function renderResults(){
+  const cp=val('currentPrice');
+  const ticker=g('tickerInput').value.trim().toUpperCase();
+  const results=METHODS.map(m=>({...m,result:m.fn()}));
+  const valid=results.filter(r=>r.result!==null);
+
+  // Summary
+  let summaryHTML='';
+  if(valid.length>0&&cp){
+    const vals=valid.map(r=>parseFloat(r.result.intrinsic));
+    const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+    const mn=Math.min(...vals),mx=Math.max(...vals);
+    const avgMos=(((avg-cp)/avg)*100).toFixed(1);
+    const mosC=parseFloat(avgMos)>0?'#4ade80':'#f87171';
+    summaryHTML=`<div class="summary">
+      <div class="summary-label">Valuation Summary — ${valid.length} model${valid.length>1?'s':''}</div>
+      <div class="summary-grid">
+        <div class="summary-item"><div class="s-label">Avg Intrinsic</div><div class="s-val" style="color:#93c5fd">$${fmt(avg)}</div></div>
+        <div class="summary-item"><div class="s-label">Low Estimate</div><div class="s-val" style="color:#86efac">$${fmt(mn)}</div></div>
+        <div class="summary-item"><div class="s-label">High Estimate</div><div class="s-val" style="color:#fde68a">$${fmt(mx)}</div></div>
+        <div class="summary-item"><div class="s-label">Avg MOS</div><div class="s-val" style="color:${mosC}">${avgMos}%</div></div>
+      </div>
+    </div>`;
+  }
+  g('summary-bar').innerHTML=summaryHTML;
+
+  let pbHTML='';
+  if(cp){
+    pbHTML=`<div class="price-bar">
+      <span class="label">Current Price</span>
+      <span class="price">$${fmt(cp)}</span>
+      ${ticker?`<span class="ticker-badge">${ticker}</span>`:''}
+    </div>`;
+  }
+  g('price-bar-wrap').innerHTML=pbHTML;
+
+  let cardsHTML='';
+  results.forEach(m=>{
+    const r=m.result;
+    const mos=r?getMOS(parseFloat(r.intrinsic),cp):null;
+    const col=r?mosColor(mos):'neutral';
+    const isExp=!!expanded[m.id];
+    let detailHTML='';
+    if(isExp&&r){
+      detailHTML='<div class="card-detail">';
+      if(r.formula)detailHTML+=`<div class="detail-formula">Formula: ${r.formula}</div>`;
+      if(r.detail)detailHTML+=r.detail();
+      if(r.futurePrice)detailHTML+=`<div class="detail-line">Future price: <span>$${r.futurePrice}</span></div>`;
+      if(r.fairPE)detailHTML+=`<div class="detail-line">Fair P/E: <span>${r.fairPE}×</span></div>`;
+      detailHTML+='</div>';
+    }
+    cardsHTML+=`<div class="result-card ${col}" onclick="toggleDetail('${m.id}')">
+      <div class="card-top">
+        <div class="card-left"><span class="card-icon">${m.icon}</span><span class="card-name">${m.label}</span></div>
+        <div class="card-right">
+          ${r?`<span class="card-value ${col}">$${fmt(r.intrinsic)}</span>${cp?badge(mos):''}`:
+              `<span class="card-empty">Fill required fields</span>`}
+          <span class="card-toggle">${isExp?'▲':'▼'}</span>
+        </div>
+      </div>${detailHTML}
+    </div>`;
+  });
+  g('results-list').innerHTML=cardsHTML;
+}
+</script>
+</body>
+</html>
